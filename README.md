@@ -1,2 +1,4 @@
 # rest-api-nodejs
-A repository for code refactoring of Node REST API.
+
+REST API developed using core NodeJS modules.
+No External npm modules are used.

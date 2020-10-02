@@ -1,60 +1,64 @@
 const http = require("http");
 const url = require("url");
-const config = require("./config");
 const stringDecoder = require("string_decoder").StringDecoder;
 const port = process.env.PORT || 3000;
 const handlers = require("./lib/handlers");
 const helpers = require("./lib/helpers");
 
 const server = http.createServer((req, res) => {
-  const parsedURL = url.parse(req.url, true);
-  const path = parsedURL.pathname;
-  const method = req.method.toLowerCase();
-  const queryStringObject = parsedURL.query;
-  const headers = req.headers;
-  const trimmedPath = path.replace(/^\/+|\/+$/g, "");
-  const decoder = new stringDecoder("utf-8");
-  let buffer = "";
+  try {
+    const parsedURL = url.parse(req.url, true);
+    const path = parsedURL.pathname;
+    const method = req.method.toLowerCase();
+    const queryStringObject = parsedURL.query;
+    const headers = req.headers;
+    const trimmedPath = path.replace(/^\/+|\/+$/g, "");
+    const decoder = new stringDecoder("utf-8");
+    let buffer = "";
 
-  req.on("data", data => {
-    buffer += decoder.write(data);
-  });
-  req.on("end", () => {
-    buffer += decoder.end();
-    const chosenHandler =
-      typeof router[trimmedPath] !== "undefined"
-        ? router[trimmedPath]
-        : handlers.notFound;
-    const data = {
-      trimmedPath: trimmedPath,
-      queryStringObject: queryStringObject,
-      method: method,
-      headers: headers,
-      payload: helpers.parseJsonToObject(buffer)
-    };
+    req.on("data", data => {
+      buffer += decoder.write(data);
+    });
+    req.on("end", async () => {
+      buffer += decoder.end();
+      const chosenHandler =
+        typeof router[trimmedPath] !== "undefined"
+          ? router[trimmedPath]
+          : handlers.notFound;
+      const data = {
+        trimmedPath,
+        queryStringObject,
+        method,
+        headers,
+        payload: helpers.parseJsonToObject(buffer)
+      };
 
-    chosenHandler(data)
-      .then(resp => {
-        // Prepare Payload Status
-        let payloadStatus =
-          typeof resp.statusCode === "number" ? resp.statusCode : 422;
-
-        // Prepare Payload String
-        let payloadString =
-          typeof resp.Message === "object"
-            ? JSON.stringify(payload)
-            : JSON.stringify({ Message: resp.Message });
-
-        // Write a response with payload stats and payload
-        res.writeHead(payloadStatus, { "Content-Type": "application/json" });
-        res.end(payloadString);
-      })
-      .catch(error => {
-        console.error(error);
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ Message: "Server Error" }));
-      });
-  });
+      const response = await chosenHandler(data);
+      if (!response) {
+        res.setHeader("Content-Type", "application/json");
+        res.writeHead(500);
+        res.end("Server Error");
+      }
+      let statusCode =
+        typeof response.statusCode == "number" ? response.statusCode : 200;
+      let payload =
+        typeof response.message == "object"
+          ? response.message
+          : typeof response.message === "string"
+          ? { message: response.message }
+          : {};
+      let payloadString = JSON.stringify(payload);
+      res.setHeader("Content-Type", "application/json");
+      res.writeHead(statusCode);
+      res.end(payloadString);
+      console.log(statusCode, payloadString);
+    });
+  } catch (err) {
+    console.error(err);
+    res.setHeader("Content-Type", "application/json");
+    res.writeHead(500);
+    res.end("Server Error");
+  }
 });
 
 server.listen(port, () => {

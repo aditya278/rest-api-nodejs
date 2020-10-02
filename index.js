@@ -38,7 +38,7 @@ const server = http.createServer((req, res) => {
                 res.end("Server Error");
             }
             let statusCode = typeof (response.statusCode == 'number') ? statusCode : 200;
-            let payload = typeof (response.message == 'object' || 'string') ? payload : {};
+            let payload = typeof (response.message == 'object' || 'string') ? payload : (typeof response.message === 'string' ? {'message' : response.message} : {});
             let payloadString = JSON.stringify(payload);
             res.setHeader('Content-Type', 'application/json');
             res.writeHead(statusCode);
@@ -50,7 +50,7 @@ const server = http.createServer((req, res) => {
         console.error(err);
         res.setHeader('Content-Type', 'application/json');
         res.writeHead(500);
-        res.end(err);
+        res.end("Server Error");
     }
 });
 

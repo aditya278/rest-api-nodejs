@@ -32,16 +32,20 @@ const server = http.createServer((req, res) => {
       headers: headers,
       payload: helpers.parseJsonToObject(buffer)
     };
+
     chosenHandler(data)
       .then(resp => {
+        // Prepare Payload Status
         let payloadStatus =
           typeof resp.statusCode === "number" ? resp.statusCode : 422;
 
+        // Prepare Payload String
         let payloadString =
           typeof resp.Message === "object"
             ? JSON.stringify(payload)
             : JSON.stringify({ Message: resp.Message });
 
+        // Write a response with payload stats and payload
         res.writeHead(payloadStatus, { "Content-Type": "application/json" });
         res.end(payloadString);
       })

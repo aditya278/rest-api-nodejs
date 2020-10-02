@@ -20,7 +20,7 @@ const server = http.createServer((req, res) => {
         req.on('data', (data) => {
             buffer += decoder.write(data);
         });
-        req.on('end', async() => {
+        req.on('end', async () => {
             buffer += decoder.end();
             const chosenHandler = typeof (router[trimmedPath]) !== 'undefined' ? router[trimmedPath] : handlers.notFound;
             const data = {
@@ -37,8 +37,9 @@ const server = http.createServer((req, res) => {
                 res.writeHead(500);
                 res.end("Server Error");
             }
-            let statusCode = typeof (response.statusCode == 'number') ? statusCode : 200;
-            let payload = typeof (response.message == 'object' || 'string') ? payload : (typeof response.message === 'string' ? {'message' : response.message} : {});
+
+            let statusCode = typeof (response.statusCode) == 'number' ? response.statusCode : 200;
+            let payload = typeof (response.message) == 'object' ? response.message : (typeof response.message === 'string' ? {'message' : response.message} : {});
             let payloadString = JSON.stringify(payload);
             res.setHeader('Content-Type', 'application/json');
             res.writeHead(statusCode);
@@ -50,7 +51,7 @@ const server = http.createServer((req, res) => {
         console.error(err);
         res.setHeader('Content-Type', 'application/json');
         res.writeHead(500);
-        res.end("Server Error");
+        res.end("Server Error from index");
     }
 });
 
